@@ -1,0 +1,37 @@
+name: challenge-camp
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - streamlit
+  - gradio
+  - jupyter
+  - jupyter_contrib_nbextensions
+  - ipykernel
+  - python-dotenv
+  - faiss-cpu
+  - pip
+  - pip:
+      - langchain
+      - langchain-community
+      - langchainhub
+      - langchain-openai
+      - openai
+      - tiktoken
+      - chromadb
+      - sentence-transformers
+      - unstructured
+      - pymupdf
+      - pdfplumber
+      - python-docx
+      - markdown
+      - beautifulsoup4
+      - html2text
+      - black
+      - isort
+      - mypy
+      - pytest
+      - pre-commit
