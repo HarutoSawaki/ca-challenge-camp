@@ -20,6 +20,12 @@ def load_lunch_csv(path: str = "data/documents/渋谷ランチ.csv") -> list[Doc
             print(f"❌ KeyError: {e} — 該当行で処理をスキップします")
             continue
 
-        documents.append(Document(page_content=content, metadata={"source": row["店名"]}))
+        documents.append(Document(
+            page_content=content,
+            metadata={
+                "source": row["店名"],
+                "url": row["食べログ"]
+            }
+        ))
     
     return documents

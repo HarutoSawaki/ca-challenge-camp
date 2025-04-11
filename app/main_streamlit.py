@@ -75,21 +75,31 @@ if user_input:
         rag_result = st.session_state.qa_chain(combined_prompt)
         ai_reply = rag_result["result"]
 
-        # 参照されたソース（店名）を抽出
-        source_docs = rag_result.get("source_documents", [])
-        sources = [doc.metadata.get("source", "（不明な店）") for doc in source_docs]
-
-        # 回答とソース情報を履歴に追加
+        # 兄貴の回答のみ履歴に追加（参考情報はあとで別表示）
         st.session_state.chat_history.append(("assistant", ai_reply))
 
-        if sources:
-            st.session_state.chat_history.append(("assistant", f"📄 参考にしたお店: {', '.join(sources)}"))
+        # 参照された文書を一時的に session に保存しておく
+        st.session_state.last_sources = rag_result.get("source_documents", [])
 
     except Exception as e:
         ai_reply = f"❌ エラーが発生しました: {e}"
         st.session_state.chat_history.append(("assistant", ai_reply))
+        st.session_state.last_sources = []
+
 
 # チャット履歴の表示
 for role, content in st.session_state.chat_history:
     with st.chat_message(role):
         st.markdown(content)
+
+# 👇 兄貴の回答のあとに「参考にしたお店」を別吹き出しで出す
+if st.session_state.get("last_sources"):
+    with st.chat_message("assistant"):
+        st.markdown("📄 **兄貴が参考にした店、ぜんぶ教えるぜ！**")
+        for doc in st.session_state.last_sources:
+            name = doc.metadata.get("source", "（店名不明）")
+            url = doc.metadata.get("url")
+            if url:
+                st.markdown(f"- 🍽️ **[{name}]({url})**")
+            else:
+                st.markdown(f"- 🍽️ **{name}**")
