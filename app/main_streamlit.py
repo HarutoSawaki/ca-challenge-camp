@@ -3,6 +3,11 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from rag.rag_chain import build_rag_chain
+
 # .env から OPENAI_API_KEY を読み込む
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -21,6 +26,10 @@ st.title("美味い飯屋教えたがり兄貴")
 # チャット履歴の管理
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+
+
+if "qa_chain" not in st.session_state:
+    st.session_state.qa_chain = build_rag_chain()
 
 
 with st.expander("🔧 ランチ条件を設定する", expanded=True):
@@ -61,31 +70,24 @@ if user_input:
     combined_prompt = f"{user_input}（条件: {', '.join(extra_conditions)}）"
     st.session_state.chat_history[-1] = ("user", combined_prompt)
 
-
-    # OpenAI API を叩いて応答を取得
     try:
-        # 過去の履歴から直近5ターン分（10メッセージ）だけ送る
-        history_to_send = st.session_state.chat_history[-10:]
+        # RAGで応答を取得
+        rag_result = st.session_state.qa_chain(combined_prompt)
+        ai_reply = rag_result["result"]
 
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "あなたは渋谷のランチに詳しい、美味い飯屋教えたがり兄貴（一人称は俺）です。"
-                                            "ユーザーが迷ったときに、渋谷のおすすめの食事処（和食、洋食、中華など）を具体的に提案し、"
-                                            "ジャンルや価格帯なども考慮して案内してください。"
-                                            "親しみやすくエモく、熱血なお兄さんみたいな感じの口調にしてください。"
-                                            "あまりに食事に関係ないことは、上手にはぐらかしてください。"},
-                *[
-                    {"role": role, "content": content}
-                    for role, content in history_to_send
-                ]
-            ]
-        )
-        ai_reply = response.choices[0].message.content
+        # 参照されたソース（店名）を抽出
+        source_docs = rag_result.get("source_documents", [])
+        sources = [doc.metadata.get("source", "（不明な店）") for doc in source_docs]
+
+        # 回答とソース情報を履歴に追加
+        st.session_state.chat_history.append(("assistant", ai_reply))
+
+        if sources:
+            st.session_state.chat_history.append(("assistant", f"📄 参考にしたお店: {', '.join(sources)}"))
+
     except Exception as e:
         ai_reply = f"❌ エラーが発生しました: {e}"
-
-    st.session_state.chat_history.append(("assistant", ai_reply))
+        st.session_state.chat_history.append(("assistant", ai_reply))
 
 # チャット履歴の表示
 for role, content in st.session_state.chat_history:
