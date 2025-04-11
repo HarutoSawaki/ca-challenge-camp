@@ -1,14 +1,28 @@
 import streamlit as st
-import os
-from openai import OpenAI
-from dotenv import load_dotenv
 
+# ページ設定
+st.set_page_config(
+    page_title="美味い飯屋教えたがり兄貴",
+    page_icon="🍱",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# --- 環境・パス設定 ---
+import os
 import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from rag.rag_chain import build_rag_chain
+from dotenv import load_dotenv
+from openai import OpenAI
 
-# .env から OPENAI_API_KEY を読み込む
+# プロジェクトルートを import パスに追加
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# --- 自作モジュール ---
+from rag.rag_chain import build_rag_chain
+from app.ui_components import render_title, render_reference_list, render_footer
+
+
+# .env 読み込み
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
@@ -20,8 +34,7 @@ if not openai_api_key:
 client = OpenAI(api_key=openai_api_key)
 
 # ページ設定
-st.set_page_config(page_title="AI Chat", page_icon="🤖", layout="wide")
-st.title("美味い飯屋教えたがり兄貴")
+# st.title("美味い飯屋教えたがり兄貴")
 
 # チャット履歴の管理
 if "chat_history" not in st.session_state:
@@ -31,6 +44,8 @@ if "chat_history" not in st.session_state:
 if "qa_chain" not in st.session_state:
     st.session_state.qa_chain = build_rag_chain()
 
+# --- UI描画ここから ---
+render_title()
 
 with st.expander("🔧 ランチ条件を設定する", expanded=True):
     genre = st.selectbox(
